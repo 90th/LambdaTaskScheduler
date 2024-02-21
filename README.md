@@ -3,7 +3,7 @@
 
 # LambdaTaskScheduler
 
-LambdaTaskScheduler is a C++ task scheduling library that enables asynchronous execution of one-time and recurring tasks. It offers a straightforward interface for managing tasks and executing them on specified intervals.
+LambdaTaskScheduler is a lightweight C++ task scheduling library that enables asynchronous execution of one-time and recurring tasks. It offers a straightforward interface for managing tasks and executing them on specified intervals.
 
 ## Key Features
 
