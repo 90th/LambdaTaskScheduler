@@ -113,6 +113,14 @@ int main() {
 }
 ```
 
+## Contributing
+
+We welcome contributions from the community!
+
+- Fork the repository
+- Make your changes
+- Submit a pull request
+
 ## License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
