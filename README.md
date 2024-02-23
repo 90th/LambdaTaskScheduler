@@ -84,7 +84,7 @@ scheduler.stop();
 Here's a simple example demonstrating the usage of LambdaTaskScheduler with task identifiers:
 
 ```cpp
-#include "TaskScheduler.h"
+#include "TaskScheduler.hpp"
 
 int main() {
     TaskScheduler scheduler;
