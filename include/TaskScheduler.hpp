@@ -57,6 +57,30 @@ public:
 	RecurringTask(std::function<void()> func, std::chrono::milliseconds interval, std::atomic<bool>* stopCondition, std::chrono::milliseconds duration = std::chrono::milliseconds(-1))
 		: taskFunction(std::move(func)), interval(interval), duration(duration), externalStopCondition(stopCondition) {}
 
+	// Delete the copy constructor and copy assignment operator
+	RecurringTask(const RecurringTask&) = delete;
+	RecurringTask& operator=(const RecurringTask&) = delete;
+
+	// Implement move constructor
+	RecurringTask(RecurringTask&& other) noexcept
+		: taskFunction(std::move(other.taskFunction)),
+		interval(other.interval),
+		duration(other.duration),
+		stopRequested(other.stopRequested.load()),
+		externalStopCondition(other.externalStopCondition) {}
+
+	// Implement move assignment operator
+	RecurringTask& operator=(RecurringTask&& other) noexcept {
+		if (this != &other) {
+			taskFunction = std::move(other.taskFunction);
+			interval = other.interval;
+			duration = other.duration;
+			stopRequested.store(other.stopRequested.load());
+			externalStopCondition = other.externalStopCondition;
+		}
+		return *this;
+	}
+
 	void execute() override {
 		auto startTime = std::chrono::steady_clock::now();
 		while (!isStopped() && (duration.count() < 0 || std::chrono::steady_clock::now() - startTime < duration)) {
@@ -76,6 +100,7 @@ public:
 			std::this_thread::sleep_for(interval);
 		}
 	}
+
 	void stop() {
 		stopRequested = true;
 	}
