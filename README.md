@@ -18,7 +18,7 @@ LambdaTaskScheduler is a lightweight C++ task scheduling library that enables as
 To integrate LambdaTaskScheduler into your project, simply include the necessary header files and link against the library.
 
 ```cpp
-#include "TaskScheduler.h"
+#include "TaskScheduler.hpp"
 ```
 
 ## Usage
