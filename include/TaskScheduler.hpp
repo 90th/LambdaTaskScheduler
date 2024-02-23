@@ -8,6 +8,7 @@
 #include <atomic>
 #include <mutex>
 #include <stdexcept>
+#include <unordered_map>
 
 class TaskExecutionError : public std::runtime_error {
 public:
@@ -42,6 +43,7 @@ public:
 
 class RecurringTask : public Task {
 private:
+	int taskId; // Identifier for the task
 	std::function<void()> taskFunction;
 	std::chrono::milliseconds interval;
 	std::chrono::milliseconds duration;
@@ -51,11 +53,11 @@ private:
 	std::condition_variable cv;
 
 public:
-	RecurringTask(std::function<void()> func, std::chrono::milliseconds interval, std::chrono::milliseconds duration = std::chrono::milliseconds(-1))
-		: taskFunction(std::move(func)), interval(interval), duration(duration), externalStopCondition(nullptr) {}
+	RecurringTask(int id, std::function<void()> func, std::chrono::milliseconds interval, std::chrono::milliseconds duration = std::chrono::milliseconds(-1))
+		: taskId(id), taskFunction(std::move(func)), interval(interval), duration(duration), externalStopCondition(nullptr) {}
 
-	RecurringTask(std::function<void()> func, std::chrono::milliseconds interval, std::atomic<bool>* stopCondition, std::chrono::milliseconds duration = std::chrono::milliseconds(-1))
-		: taskFunction(std::move(func)), interval(interval), duration(duration), externalStopCondition(stopCondition) {}
+	RecurringTask(int id, std::function<void()> func, std::chrono::milliseconds interval, std::atomic<bool>* stopCondition, std::chrono::milliseconds duration = std::chrono::milliseconds(-1))
+		: taskId(id), taskFunction(std::move(func)), interval(interval), duration(duration), externalStopCondition(stopCondition) {}
 
 	// Delete the copy constructor and copy assignment operator
 	RecurringTask(const RecurringTask&) = delete;
@@ -63,7 +65,8 @@ public:
 
 	// Implement move constructor
 	RecurringTask(RecurringTask&& other) noexcept
-		: taskFunction(std::move(other.taskFunction)),
+		: taskId(other.taskId),
+		taskFunction(std::move(other.taskFunction)),
 		interval(other.interval),
 		duration(other.duration),
 		stopRequested(other.stopRequested.load()),
@@ -72,6 +75,7 @@ public:
 	// Implement move assignment operator
 	RecurringTask& operator=(RecurringTask&& other) noexcept {
 		if (this != &other) {
+			taskId = other.taskId;
 			taskFunction = std::move(other.taskFunction);
 			interval = other.interval;
 			duration = other.duration;
@@ -104,8 +108,13 @@ public:
 	void stop() {
 		stopRequested = true;
 	}
+
 	bool isStopped() const {
 		return stopRequested;
+	}
+
+	int getId() const { // Getter for task identifier
+		return taskId;
 	}
 };
 
@@ -114,12 +123,14 @@ private:
 	struct TaskEntry {
 		std::unique_ptr<Task> task;
 
+		TaskEntry() : task(nullptr) {} // Default constructor to initialize task to nullptr
+
 		TaskEntry(std::unique_ptr<Task> t)
 			: task(std::move(t)) {}
 	};
 
 	std::vector<std::thread> threads;
-	std::queue<TaskEntry> taskQueue;
+	std::unordered_map<int, TaskEntry> taskMap; // Map to store tasks with identifiers
 	std::mutex taskMutex;
 	std::condition_variable taskCV;
 	std::atomic<bool> running;
@@ -140,17 +151,17 @@ public:
 		}
 	}
 
-	void addTask(std::unique_ptr<Task> task) {
+	// Add a task with a specified identifier
+	void addTask(int taskId, std::unique_ptr<Task> task) {
 		std::lock_guard<std::mutex> lock(taskMutex);
-		taskQueue.emplace(std::move(task));
+		taskMap[taskId] = TaskEntry(std::move(task));
 		taskCV.notify_one();
 	}
 
-	void stopRecurringTasks() {
+	// Stop a specific task by its identifier
+	void stopTask(int taskId) {
 		std::lock_guard<std::mutex> lock(taskMutex);
-		while (!taskQueue.empty()) {
-			taskQueue.pop();
-		}
+		taskMap.erase(taskId);
 	}
 
 	void stop() {
@@ -163,13 +174,13 @@ private:
 		while (running) {
 			std::unique_lock<std::mutex> lock(taskMutex);
 			taskCV.wait(lock, [this] {
-				return !taskQueue.empty() || !running;
+				return !taskMap.empty() || !running;
 				});
 			if (!running) return;
 
-			if (!taskQueue.empty()) {
-				auto entry = std::move(taskQueue.front());
-				taskQueue.pop();
+			if (!taskMap.empty()) {
+				auto entry = std::move(taskMap.begin()->second); // Get the first task
+				taskMap.erase(taskMap.begin()); // Remove the task from the map
 				lock.unlock();
 				try {
 					entry.task->execute();
@@ -179,10 +190,6 @@ private:
 					// For now, rethrow the exception
 					throw TaskExecutionError(std::string("Error executing task: ") + e.what());
 				}
-			}
-			else {
-				lock.unlock();
-				continue;
 			}
 		}
 	}
