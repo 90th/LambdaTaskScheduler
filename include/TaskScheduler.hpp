@@ -3,13 +3,10 @@
 
 #include <iostream>
 #include <functional>
-#include <chrono>
 #include <thread>
-#include <vector>
 #include <queue>
 #include <atomic>
 #include <mutex>
-#include <condition_variable>
 #include <stdexcept>
 
 class TaskExecutionError : public std::runtime_error {
@@ -166,4 +163,4 @@ private:
 	}
 };
 
-#endif 
+#endif
