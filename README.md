@@ -35,14 +35,14 @@ auto oneTimeTask = std::make_unique<OneTimeTask>([] {
 });
 
 // Define a recurring task with a specified interval and duration
-auto recurringTask = std::make_unique<RecurringTask>([] {
+auto recurringTask = std::make_unique<RecurringTask>(1, [] {
     // Task logic here
     std::cout << "Executing recurring task" << std::endl;
 }, std::chrono::milliseconds(1000), std::chrono::milliseconds(5000)); // Interval of 1 second, duration of 5 seconds
 
 // Define a recurring task with an external stop condition
 std::atomic<bool> stopFlag(false);
-auto externalStopConditionTask = std::make_unique<RecurringTask>([] {
+auto externalStopConditionTask = std::make_unique<RecurringTask>(2, [] {
     // Task logic here
     std::cout << "Executing task with external stop condition" << std::endl;
 }, std::chrono::milliseconds(1000), &stopFlag); // Interval of 1 second, external stop condition
@@ -54,17 +54,17 @@ Add tasks to the task scheduler to initiate their execution.
 
 ```cpp
 TaskScheduler scheduler;
-scheduler.addTask(std::move(oneTimeTask));
-scheduler.addTask(std::move(recurringTask));
-scheduler.addTask(std::move(externalStopConditionTask));
+scheduler.addTask(1, std::move(oneTimeTask)); // Assign task ID 1 to the one-time task
+scheduler.addTask(2, std::move(recurringTask)); // Assign task ID 2 to the recurring task
+scheduler.addTask(3, std::move(externalStopConditionTask)); // Assign task ID 3 to the task with external stop condition
 ```
 
 ### Stopping Tasks
 
-Stop recurring tasks when they are no longer needed or when an external condition is met.
+Stop specific recurring tasks by their identifiers when they are no longer needed or when an external condition is met.
 
 ```cpp
-scheduler.stopRecurringTasks(); // Stop all recurring tasks
+scheduler.stopTask(2); // Stop the recurring task with task ID 2
 
 // Alternatively, stop a specific recurring task when an external condition is met
 // For example, when a stop condition atomic flag is set
@@ -81,7 +81,7 @@ scheduler.stop();
 
 ## Example
 
-Here's a simple example demonstrating the usage of LambdaTaskScheduler:
+Here's a simple example demonstrating the usage of LambdaTaskScheduler with task identifiers:
 
 ```cpp
 #include "TaskScheduler.h"
@@ -89,17 +89,17 @@ Here's a simple example demonstrating the usage of LambdaTaskScheduler:
 int main() {
     TaskScheduler scheduler;
 
-    // Add tasks to the scheduler
-    scheduler.addTask(std::make_unique<OneTimeTask>([] {
+    // Add tasks to the scheduler with task IDs
+    scheduler.addTask(1, std::make_unique<OneTimeTask>([] {
         std::cout << "Executing one-time task" << std::endl;
     }));
 
-    scheduler.addTask(std::make_unique<RecurringTask>([] {
+    scheduler.addTask(2, std::make_unique<RecurringTask>([] {
         std::cout << "Executing recurring task" << std::endl;
     }, std::chrono::milliseconds(1000), std::chrono::milliseconds(5000))); // Interval of 1 second, duration of 5 seconds
 
     std::atomic<bool> stopFlag(false);
-    scheduler.addTask(std::make_unique<RecurringTask>([] {
+    scheduler.addTask(3, std::make_unique<RecurringTask>([] {
         std::cout << "Executing task with external stop condition" << std::endl;
     }, std::chrono::milliseconds(1000), &stopFlag)); // Interval of 1 second, external stop condition
 
