@@ -12,7 +12,7 @@
 
 class TaskExecutionError : public std::runtime_error {
 public:
-	TaskExecutionError(const std::string& message)
+	inline TaskExecutionError(const std::string& message)
 		: std::runtime_error(message) {}
 };
 
@@ -27,9 +27,9 @@ private:
 	std::function<void()> taskFunction;
 
 public:
-	OneTimeTask(std::function<void()> func) : taskFunction(std::move(func)) {}
+	inline OneTimeTask(std::function<void()> func) : taskFunction(std::move(func)) {}
 
-	void execute() override {
+	inline void execute() override {
 		if (taskFunction) {
 			try {
 				taskFunction();
@@ -85,7 +85,7 @@ public:
 		return *this;
 	}
 
-	void execute() override {
+	inline void execute() override {
 		auto startTime = std::chrono::steady_clock::now();
 		while (!isStopped() && (duration.count() < 0 || std::chrono::steady_clock::now() - startTime < duration)) {
 			if (taskFunction) {
@@ -105,15 +105,15 @@ public:
 		}
 	}
 
-	void stop() {
+	inline void stop() {
 		stopRequested = true;
 	}
 
-	bool isStopped() const {
+	inline bool isStopped() const {
 		return stopRequested;
 	}
 
-	int getId() const { // Getter for task identifier
+	inline int getId() const { // Getter for task identifier
 		return taskId;
 	}
 };
@@ -123,9 +123,9 @@ private:
 	struct TaskEntry {
 		std::unique_ptr<Task> task;
 
-		TaskEntry() : task(nullptr) {} // Default constructor to initialize task to nullptr
+		inline TaskEntry() : task(nullptr) {} // Default constructor to initialize task to nullptr
 
-		TaskEntry(std::unique_ptr<Task> t)
+		inline TaskEntry(std::unique_ptr<Task> t)
 			: task(std::move(t)) {}
 	};
 
@@ -136,14 +136,14 @@ private:
 	std::atomic<bool> running;
 
 public:
-	TaskScheduler(size_t numThreads = std::thread::hardware_concurrency())
+	inline TaskScheduler(size_t numThreads = std::thread::hardware_concurrency())
 		: running(true) {
 		for (size_t i = 0; i < numThreads; ++i) {
 			threads.emplace_back([this] { this->taskLoop(); });
 		}
 	}
 
-	~TaskScheduler() {
+	inline ~TaskScheduler() {
 		running = false;
 		taskCV.notify_all();
 		for (auto& thread : threads) {
@@ -152,25 +152,25 @@ public:
 	}
 
 	// Add a task with a specified identifier
-	void addTask(int taskId, std::unique_ptr<Task> task) {
+	inline void addTask(int taskId, std::unique_ptr<Task> task) {
 		std::lock_guard<std::mutex> lock(taskMutex);
 		taskMap[taskId] = TaskEntry(std::move(task));
 		taskCV.notify_one();
 	}
 
 	// Stop a specific task by its identifier
-	void stopTask(int taskId) {
+	inline void stopTask(int taskId) {
 		std::lock_guard<std::mutex> lock(taskMutex);
 		taskMap.erase(taskId);
 	}
 
-	void stop() {
+	inline void stop() {
 		running = false;
 		taskCV.notify_all();
 	}
 
 private:
-	void taskLoop() {
+	inline void taskLoop() {
 		while (running) {
 			std::unique_lock<std::mutex> lock(taskMutex);
 			taskCV.wait(lock, [this] {
