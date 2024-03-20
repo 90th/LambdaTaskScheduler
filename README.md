@@ -12,6 +12,7 @@ LambdaTaskScheduler is a lightweight C++ task scheduling library that enables as
 - **Thread-Safe Execution**: Ensures safe concurrent task execution using mutex and condition variables.
 - **Dynamic Thread Pool**: Flexible task scheduler with a dynamically adjustable thread pool size.
 - **Modern C++ Implementation**: Clean and efficient codebase leveraging modern C++ features.
+- **Broad Compatibility**: Designed to work with **C++11**, **C++14**, **C++17**, and **C++20** standards, accommodating a wide range of development environments.
 
 ## Installation
 
