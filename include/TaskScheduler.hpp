@@ -161,6 +161,9 @@ public:
 	// Stop a specific task by its identifier
 	inline void stopTask(int taskId) {
 		std::lock_guard<std::mutex> lock(taskMutex);
+		if (taskMap.find(taskId) == taskMap.end()) {
+			throw TaskExecutionError("Task not found");
+		}
 		taskMap.erase(taskId);
 	}
 
